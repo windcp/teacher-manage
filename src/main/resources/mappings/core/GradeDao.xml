@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cyl.manage.core.dao.GradeDao">
+
+    <sql id="colums">
+        g.id,
+        g.student_no as studentNo,
+        g.student_name as studentName,
+        g.course_id as "course.id",
+        g.paper_score as paperScore,
+        g.extra_score as extraScore,
+        g.amount,
+        g.ranking,
+        g.remarks,
+        g.point,
+        g.credit,
+        g.create_by AS "createBy.id",
+        g.create_date,
+        g.update_by AS "updateBy.id",
+        g.update_date,
+        g.del_flag
+    </sql>
+
+    <sql id="joinColums">
+        s.id as "student.id",
+        s.name AS "student.name",
+        s.student_no as "student.studentNo",
+        s.age as "student.age",
+        s.sex as "student.sex",
+        s.point as "student.point",
+        s.grades as "student.grades",
+        g.id,
+        g.paper_score as paperScore,
+        g.extra_score as extraScore,
+        g.amount,
+        g.ranking,
+        g.remarks,
+        g.point,
+        g.credit,
+        g.create_by AS "createBy.id",
+        g.create_date,
+        g.update_by AS "updateBy.id",
+        g.update_date,
+        g.del_flag,
+        c.id as "course.id",
+        c.name as "course.name",
+        c.credit as "course.credit",
+        c.term as "course.term",
+        c.class_room AS "course.classRoom",
+        cs.id as "classes.id",
+        cs.name as "classes.name"
+    </sql>
+
+    <sql id="courseJoinColums">
+        g.id,
+        g.student_no as studentNo,
+        g.student_name as studentName,
+        g.paper_score as paperScore,
+        g.extra_score as extraScore,
+        g.amount,
+        g.ranking,
+        g.remarks,
+        g.point,
+        g.credit,
+        g.create_by AS "createBy.id",
+        g.create_date,
+        g.update_by AS "updateBy.id",
+        g.update_date,
+        g.del_flag,
+        c.id as "course.id",
+        c.name as "course.name",
+        c.credit as "course.credit",
+        c.term as "course.term",
+        c.class_room AS "course.classRoom"
+    </sql>
+
+    <sql id="join">
+        left join grade_course gc on gc.grade_id = g.id
+        left join course c on c.id = gc.course_id
+        left join student_grade sg on sg.grade_id = g.id
+        left join student s on s.id = sg.student_id
+        left join student_classes sc on sc.student_id = s.id
+        left join classes cs on cs.id = sc.classes_id
+    </sql>
+
+    <sql id="joins">
+        left join grade_course gc on gc.grade_id = g.id
+        left join course c on c.id = gc.course_id
+    </sql>
+
+    <sql id="where">
+        1 = 1 and g.del_flag = 0
+        <if test="student.studentNo != null and student.studentNo != ''">
+            and s.student_no like CONCAT('%', #{student.studentNo}, '%')
+        </if>
+        <if test="student.name != null and student.name != ''">
+            and s.student_name like CONCAT('%', #{student.studentNo}, '%')
+        </if>
+        <if test="classes.id != null and classes.id != ''">
+            and cs.id = #{classes.id}
+        </if>
+    </sql>
+
+    <select id="get" resultType="Grade">
+        select
+        <include refid="joinColums"/>
+        from grade g <include refid="join" />
+        where g.id = #{id} and g.del_flag = 0
+    </select>
+
+    <select id="findList" resultType="Grade">
+        select
+        <include refid="joinColums"/>
+        from grade g <include refid="join" />
+        <where>
+           /* g.del_flag = 0*/
+            <include refid="where"/>
+        </where>
+        <if test="page != null and page.orderBy != null and page.orderBy != ''">
+            order by amount ${page.orderBy}
+        </if>
+        <if test="page == null or page.orderBy == null or page.orderBy == ''">
+            order by amount desc
+        </if>
+    </select>
+
+    <select id="findAllList" resultType="Grade">
+        select <include refid="colums"/> from grade g where g.del_flag = 0
+    </select>
+
+    <select id="findListExceptId" resultType="Grade">
+        select <include refid="colums"/> from grade g where g.id != #{id} and g.del_flag = 0
+    </select>
+    
+    <update id="update">
+        update grade set
+        course_id = #{course.id},
+        paper_score = #{paperScore},
+        extra_score = #{extraScore},
+        amount = #{amount},
+        point = #{point},
+        credit = #{credit},
+        ranking = #{ranking},
+        update_by = #{updateBy.id},
+        update_date = #{updateDate},
+        remarks = #{remarks}
+        where id = #{id}
+    </update>
+
+    <update id="delete">
+        update grade set del_flag = 1
+        where id = #{id}
+    </update>
+
+    <insert id="insert">
+        insert into grade(
+        id,
+        course_id,
+        paper_score,
+        extra_score,
+        amount,
+        ranking,
+        point,
+        credit,
+        update_by ,
+        update_date ,
+        remarks ,
+        create_by,
+        create_date,
+        del_flag
+        )values(
+        #{id},
+        #{course.id},
+        #{paperScore},
+        #{extraScore},
+        #{amount},
+        #{ranking},
+        #{point},
+        #{credit},
+        #{updateBy.id},
+        #{updateDate},
+        #{remarks},
+        #{createBy.id},
+        #{createDate},
+        #{delFlag}
+        )
+    </insert>
+
+    <update id="updateRanking">
+        update grade set ranking = #{ranking} where id = #{id} ;
+    </update>
+
+    <!--删除成绩和课程关联表数据-->
+    <delete id="deleteGradeCourse">
+        delete from grade_course where grade_id = #{gradeId}
+    </delete>
+
+    <!--添加成绩和课程关联表数据-->
+    <insert id="insertGradeCourse">
+        insert into grade_course (
+        grade_id ,
+        course_id
+        )values(
+        #{gradeId},
+        #{courseId})
+    </insert>
+
+    <!--删除成绩和学生关联表数据-->
+    <delete id="deleteStudentGrade">
+        delete from student_grade where grade_id = #{gradeId}
+    </delete>
+
+    <!--添加成绩和学生关联表数据-->
+    <insert id="insertStudentGrade">
+        insert into student_grade (
+        student_id,
+        grade_id
+        )values(
+        #{studentId},
+        #{gradeId})
+    </insert>
+
+
+</mapper>

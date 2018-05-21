@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cyl.manage.core.dao.ClassesDao">
+
+    <sql id="colums">
+        c.id,
+        c.name AS name,
+        c.remarks,
+        c.create_by AS "createBy.id",
+        c.create_date,
+        c.update_by AS "updateBy.id",
+        c.update_date,
+        c.del_flag
+    </sql>
+
+    <sql id="studentJoinColums">
+        s.id,
+        s.name AS name,
+        s.student_no as studentNo,
+        s.age as age,
+        s.sex as sex,
+        s.point as point,
+        s.grades as grades,
+        s.remarks,
+        s.create_by AS "createBy.id",
+        s.create_date,
+        s.update_by AS "updateBy.id",
+        s.update_date,
+        s.del_flag,
+        c.id as "classes.id",
+        c.name as "classes.name"
+    </sql>
+
+    <sql id="joins">
+        left join student_classes sc on sc.classes_id = c.id
+        left join student s on s.id = sc.student_id
+    </sql>
+
+    <sql id="where">
+        1 = 1 and c.del_flag = 0
+       <if test="name != null and name != ''">
+            and c.name like CONCAT('%', #{name}, '%')
+        </if>
+    </sql>
+
+    <select id="get" resultType="Classes">
+        select
+        <include refid="colums"/>
+        from classes c where c.id = #{id} and c.del_flag = 0
+    </select>
+
+    <select id="findList" resultType="Classes">
+        select
+        <include refid="colums"/>
+        from classes c
+        <where>
+            <include refid="where"/>
+        </where>
+    </select>
+
+    <select id="findAllList" resultType="Classes">
+        select <include refid="colums"/> from classes c where c.del_flag = 0
+    </select>
+
+    <select id="findByIds" resultType="Classes">
+        select <include refid="colums"/> from classes c
+        where c.del_flag = 0
+        and c.id in
+        <foreach collection="classIds" item="id" open="(" close=")"
+                 separator=",">
+            #{id}
+        </foreach>
+
+    </select>
+
+    <select id="findListExceptId" resultType="Classes">
+        select <include refid="colums"/> from classes g where c.id != #{id} and c.del_flag = 0
+    </select>
+    
+    <update id="update">
+        update classes set
+        name = #{name},
+        update_by = #{updateBy.id},
+        update_date = #{updateDate},
+        remarks = #{remarks}
+        where id = #{id}
+    </update>
+
+    <update id="delete">
+        update classes set del_flag = 1
+        where id = #{id}
+    </update>
+
+    <insert id="insert">
+        insert into classes(
+        id,
+        name,
+        update_by ,
+        update_date ,
+        remarks ,
+        create_by,
+        create_date,
+        del_flag
+        )values(
+        #{id},
+        #{name},
+        #{updateBy.id},
+        #{updateDate},
+        #{remarks},
+        #{createBy.id},
+        #{createDate},
+        #{delFlag}
+        )
+    </insert>
+
+
+</mapper>

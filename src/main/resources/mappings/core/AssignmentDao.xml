@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cyl.manage.core.dao.AssignmentDao">
+
+    <sql id="colums">
+        a.id,
+        a.type,
+        a.title,
+        a.difficulty,
+        a.content,
+        a.answer,
+        a.remarks,
+        a.create_by AS "createBy.id",
+        a.create_date,
+        a.update_by AS "updateBy.id",
+        a.update_date,
+        a.del_flag
+    </sql>
+
+    <sql id="joins">
+
+    </sql>
+
+    <sql id="where">
+        1 = 1 and a.del_flag = 0
+        <if test="difficulty != null and difficulty != ''">
+            and a.difficulty = #{difficulty}
+        </if>
+        <if test="type != null and type != ''">
+            and a.type = #{type}
+        </if>
+        <if test="title != null and title != ''">
+            and a.title like concat("%",#{title} ,"%")
+        </if>
+    </sql>
+
+    <select id="get" resultType="Assignment">
+        select
+        <include refid="colums"/>
+        from assignment a where a.id = #{id}
+    </select>
+
+    <select id="findList" resultType="Assignment">
+        select
+        <include refid="colums"/>
+        from assignment a
+        <where>
+            <include refid="where"/>
+        </where>
+    </select>
+
+    <update id="update">
+        update assignment set
+        type =#{type},
+        title = #{title},
+        difficulty = #{difficulty},
+        content = #{content},
+        answer = #{answer},
+        update_by = #{updateBy.id},
+        update_date = #{updateDate},
+        remarks = #{remarks}
+        where id = #{id}
+    </update>
+
+    <update id="delete">
+        update assignment set del_flag = 1
+        where id = #{id}
+    </update>
+
+    <insert id="insert">
+        insert into assignment(
+        id,
+        type,
+        title,
+        difficulty,
+        content,
+        answer,
+        update_by ,
+        update_date ,
+        remarks ,
+        create_by,
+        create_date,
+        del_flag
+        )values(
+        #{id},
+        #{type},
+        #{title},
+        #{difficulty},
+        #{content},
+        #{answer},
+        #{updateBy.id},
+        #{updateDate},
+        #{remarks},
+        #{createBy.id},
+        #{createDate},
+        #{delFlag}
+        )
+    </insert>
+</mapper>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cyl.manage.core.dao.EvaluationDao">
+
+    <sql id="colums">
+        e.id,
+        e.teach_model as teachModel,
+        e.experiment_manage as experimentManage,
+        e.assignment_correcting as assignmentCorrecting,
+        e.feedback as feedBack ,
+        e.score,
+        e.ranking,
+        e.remarks,
+        e.create_by AS "createBy.id",
+        e.create_date,
+        e.update_by AS "updateBy.id",
+        e.update_date,
+        e.del_flag,
+        t.id as "teacher.id",
+        t.name as "teacher.name"
+    </sql>
+
+    <sql id="joins">
+      left join teacher t on t.id = e.teacher_id
+    </sql>
+
+    <sql id="where">
+        1 = 1 and e.del_flag = 0 and t.del_flag = 0
+        <if test="teacher != null and teacher.id != null and teacher.id != ''">
+            and t.teacher_id = #{teacher.id}
+        </if>
+
+    </sql>
+
+    <select id="get" resultType="Evaluation">
+        select
+        <include refid="colums"/>
+        from evaluation e <include refid="joins"/> where e.id = #{id}
+
+    </select>
+
+    <select id="findList" resultType="Evaluation">
+        select
+        <include refid="colums"/>
+        from evaluation e <include refid="joins"/>
+        <where>
+            <include refid="where"/>
+        </where>
+        <if test="page != null and page.orderBy != null and page.orderBy != ''">
+            order by score ${page.orderBy}
+        </if>
+
+    </select>
+
+    <select id="findAllList" resultType="Evaluation">
+        select <include refid="colums"/> from evaluation e <include refid="joins"/>
+        where e.del_flag = 0 and t.del_flag = 0 order by score desc
+    </select>
+
+    <select id="findListExceptId" resultType="Evaluation">
+        select e.id,e.score from evaluation e where e.del_flag = 0 and e.id != #{id}
+    </select>
+
+    <update id="update">
+      update evaluation set
+        teacher_id = #{teacher.id},
+        teach_model = #{teachModel},
+        experiment_manage = #{experimentManage},
+        assignment_correcting = #{assignmentCorrecting},
+        feedback = #{feedBack} ,
+        ranking = #{ranking},
+        score = #{score},
+        update_by = #{updateBy.id},
+        update_date = #{updateDate},
+        remarks = #{remarks}
+      where id = #{id}
+    </update>
+
+    <update id="delete">
+        update evaluation set del_flag = 1
+        where id = #{id}
+    </update>
+
+    <insert id="insert">
+        insert into evaluation(
+        id,
+        teacher_id,
+        teach_model,
+        experiment_manage,
+        assignment_correcting,
+        feedback,
+        ranking,
+        score,
+        update_by ,
+        update_date ,
+        remarks ,
+        create_by,
+        create_date,
+        del_flag
+        )values(
+        #{id},
+        #{teacher.id},
+        #{teachModel},
+        #{experimentManage},
+        #{assignmentCorrecting},
+        #{feedBack} ,
+        #{ranking},
+        #{score},
+        #{updateBy.id},
+        #{updateDate},
+        #{remarks},
+        #{createBy.id},
+        #{createDate},
+        #{delFlag}
+        )
+    </insert>
+
+    <update id="updateRanking">
+        update evaluation set ranking = #{ranking} where id = #{id} ;
+    </update>
+</mapper>

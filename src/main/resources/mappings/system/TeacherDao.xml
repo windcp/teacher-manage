@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cyl.manage.core.dao.TeacherDao">
+
+    <sql id="colums">
+       t.id ,
+       t.name,
+       t.age,
+       t.sex,
+       t.identity,
+       t.education,
+       t.phone,
+       t.thesis,
+       t.awards,
+       t.remarks,
+	   t.create_by AS "createBy.id",
+	   t.create_date,
+	   t.update_by AS "updateBy.id",
+	   t.update_date,
+	   t.del_flag
+    </sql>
+
+    <sql id="courseJoinColums">
+        t.id ,
+        t.name,
+        t.age,
+        t.sex,
+        t.identity,
+        t.education,
+        t.phone,
+        t.thesis,
+        t.awards,
+        t.remarks,
+        t.create_by AS "createBy.id",
+        t.create_date,
+        t.update_by AS "updateBy.id",
+        t.update_date,
+        t.del_flag,
+        c.id as course_id,
+        c.name as course_name,
+        c.credit as course_credit,
+        e.ranking ,
+        e.score ,
+        e.id as evaluation_id ,
+        cs.id as classes_id ,
+        cs.name as classes_name
+    </sql>
+
+    <resultMap id="teacherResult" type="Teacher">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="age" column="age" />
+        <result property="sex" column="sex" />
+        <result property="identity" column="identity" />
+        <result property="education" column="education" />
+        <result property="phone" column="phone" />
+        <result property="awards" column="awards" />
+        <result property="createBy.id" column="create_by" />
+        <result property="updateBy.id" column="update_by" />
+        <result property="createDate" column="create_date" />
+        <result property="updateDate" column="update_date" />
+        <result property="remarks" column="remarks" />
+        <result property="evaluation.ranking" column="ranking" />
+        <result property="evaluation.score" column="score" />
+        <result property="evaluation.id" column="evaluation_id" />
+        <collection property="courseList" ofType="Course" columnPrefix="course_">
+            <id property="id" column="id" />
+            <result property="name" column="name" />
+            <result property="credit" column="credit" />
+        </collection>
+        <collection property="classesList" ofType="Classes" columnPrefix="classes_">
+            <id property="id" column="id" />
+            <result property="name" column="name" />
+        </collection>
+    </resultMap>
+
+    <sql id="joins">
+        left join teacher_course tc on tc.teacher_id = t.id
+        left join course c on c.id = tc.course_id
+        left join evaluation e on e.teacher_id = t.id
+        left join teacher_classes tcs on tcs.teacher_id = t.id
+        left join classes cs on cs.id = tcs.classes_id
+    </sql>
+
+    <sql id="where">
+        1 = 1 and t.del_flag = 0
+        <if test="name != null and name != ''">
+            and t.name like CONCAT('%', #{name}, '%')
+        </if>
+        <if test="sex != null and sex != ''">
+            and t.sex = #{sex}
+        </if>
+        <if test="identity != null and identity != ''">
+            and t.identity like CONCAT('%', #{identity}, '%')
+        </if>
+        <if test="phone != null and phone != ''">
+            and t.phone like CONCAT('%', #{phone}, '%')
+        </if>
+        <if test="education != null and education != ''">
+            and t.education like CONCAT('%', #{education}, '%')
+        </if>
+    </sql>
+
+    <select id="get" resultMap="teacherResult">
+      select <include refid="courseJoinColums" /> from teacher t
+        <include refid="joins" />
+        where t.id = #{id} and t.del_flag = 0
+    </select>
+
+    <select id="findList" resultMap="teacherResult">
+        select <include refid="courseJoinColums" /> from teacher t <include refid="joins" />
+        <where>
+            <include refid="where" />
+        </where> order by t.update_date desc
+    </select>
+
+    <select id="findAllList" resultType="Teacher">
+        select <include refid="colums" /> from teacher t where t.del_flag = 0
+    </select>
+
+    <select id="findListByNoEvaluation" resultType="Teacher">
+        select <include refid="colums" /> from teacher t
+        where t.del_flag = 0 and t.id not in (
+         select teacher_id from evaluation where del_flag = 0
+        )
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+       select count(t.id) from teacher t
+        <where>
+          <include refid="where" />
+        </where>
+    </select>
+
+    <update id="update">
+       update teacher set
+        name = #{name},
+        age = #{age},
+        sex = #{sex},
+        identity = #{identity},
+        education = #{education},
+        phone = #{phone},
+        thesis = #{thesis},
+        awards = #{awards},
+        update_by = #{updateBy.id},
+        update_date = #{updateDate},
+        remarks = #{remarks}
+       where id = #{id}
+    </update>
+
+    <insert id="insert">
+        insert into teacher(
+            id,
+            name ,
+            age ,
+            sex,
+            identity ,
+            education,
+            phone ,
+            thesis ,
+            awards ,
+            update_by ,
+            update_date ,
+            remarks ,
+            create_by,
+            create_date,
+            del_flag,
+            user_id
+        )values(
+             #{id},
+             #{name},
+             #{age},
+             #{sex},
+             #{identity},
+             #{education},
+             #{phone},
+             #{thesis},
+             #{awards},
+             #{updateBy.id},
+             #{updateDate},
+             #{remarks},
+             #{createBy.id},
+             #{createDate},
+             #{delFlag},
+             #{user.id}
+        )
+    </insert>
+
+    <update id="delete">
+        update teacher set del_flag = 1 where id = #{id}
+    </update>
+
+    <delete id="deleteTeacherCourse">
+        delete from teacher_course where teacher_id = #{teacherId}
+    </delete>
+
+    <insert id="insertTeacherCourse">
+        insert into teacher_course(
+        teacher_id ,
+        course_id
+        )value
+        <foreach collection="courseIds" item="courseId" separator=",">
+            (#{teacherId},#{courseId})
+        </foreach>
+    </insert>
+
+
+
+    <!--删除老师和班级关联表数据-->
+    <delete id="deleteTeacherClasses">
+        delete from teacher_classes where teacher_id = #{teacherId}
+    </delete>
+
+    <!--插入老师和班级关联表数据-->
+    <insert id="insertTeacherClasses">
+        insert into teacher_classes(
+        teacher_id ,
+        classes_id
+        )value
+        <foreach collection="classesIds" item="classesId" separator=",">
+            (#{teacherId},#{classesId})
+        </foreach>
+    </insert>
+
+
+</mapper>

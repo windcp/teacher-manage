@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cyl.manage.system.dao.UserDao">
+
+	<resultMap id="userResult" type="User">
+		<id property="id" column="id" />
+		<result property="loginName" column="login_name" />
+		<result property="password" column="password" />
+		<result property="name" column="name" />
+		<result property="email" column="email" />
+		<result property="userType" column="user_type" />
+		<result property="loginIp" column="login_ip" />
+		<result property="loginDate" column="login_date" />
+		<result property="loginFlag" column="login_flag" />
+		<result property="createBy.id" column="create_by" />
+		<result property="updateBy.id" column="update_by" />
+		<result property="createDate" column="create_date" />
+		<result property="updateDate" column="update_date" />
+		<result property="remarks" column="remarks" />
+		<result property="teacherId" column="teacher_id" />
+		<collection property="roleList" ofType="Role" columnPrefix="role_">
+			<id property="id" column="id" />
+			<result property="name" column="name" />
+			<result property="enname" column="enname" />
+		</collection>
+	</resultMap>
+
+    <sql id="userRoleJoinColumns">
+        a.id,
+        a.login_name,
+        a.password,
+        a.name,
+        a.email,
+        a.user_type,
+        a.login_ip,
+        a.login_date,
+        a.remarks,
+        a.login_flag,
+        a.create_by AS "createBy.id",
+        a.create_date,
+        a.update_by AS "updateBy.id",
+        a.update_date,
+        a.del_flag,
+        a.teacher_id,
+        r.id AS role_id,
+	    r. NAME AS role_name,
+	    r.enname AS role_enname
+    </sql>
+
+	<sql id="userColumns">
+		a.id,
+		a.login_name,
+		a.password,
+		a.name,
+		a.email,
+		a.user_type,
+		a.login_ip,
+		a.login_date,
+		a.remarks,
+		a.login_flag,
+		a.create_by AS "createBy.id",
+		a.create_date,
+		a.update_by AS "updateBy.id",
+		a.update_date,
+		a.del_flag,
+		a.teacher_id
+	</sql>
+
+	<sql id="userJoins">
+
+	</sql>
+
+	<sql id="userRoleJoins">
+		LEFT JOIN sys_user_role ur ON ur.user_id = a.id
+		LEFT JOIN sys_role r ON ur.role_id = r.id
+	</sql>
+
+	<!-- 根据编号获得用户 -->
+	<select id="get" resultType="User">
+		SELECT
+		<include refid="userColumns" />
+		FROM sys_user a
+		<include refid="userJoins" />
+		WHERE a.id = #{id}
+	</select>
+	<!-- 根据id获得用户 -->
+	<select id="getUserById" resultType="User">
+		SELECT
+		*
+		FROM sys_user 
+		WHERE id = #{loginId}
+	</select>
+
+	<!-- 根据登录名查询用户 -->
+	<select id="getByLoginName" resultType="User" parameterType="User">
+		SELECT
+		<include refid="userColumns" />
+		FROM sys_user a
+		<include refid="userJoins" />
+		WHERE a.login_name = #{loginName} AND a.del_flag = #{DEL_FLAG_NORMAL}
+	</select>
+
+<!-- 根据登录名查询用户 -->
+	<select id="getByLoginNameApp" resultType="User" parameterType="User">
+		SELECT
+		*
+		FROM sys_user a 
+		WHERE a.login_name = #{loginName} AND a.del_flag = #{DEL_FLAG_NORMAL}
+	</select>
+
+
+
+	<!-- 分页查询用户信息 -->
+	<select id="findList" resultMap="userResult">
+		SELECT
+		<include refid="userRoleJoinColumns" />
+		FROM sys_user a
+		<include refid="userRoleJoins" />
+		<if test="role != null and role.id != null and role.id != ''">
+			JOIN sys_user_role ur ON ur.user_id = a.id AND ur.role_id
+			= #{role.id}
+		</if>
+		WHERE a.del_flag = #{DEL_FLAG_NORMAL}
+		<!-- 如果不是超级管理员，则不显示超级管理员用户 -->
+		<if test="!currentUser.admin">
+			AND a.id != '1'
+		</if>
+		<if test="loginName != null and loginName != ''">
+			AND a.login_name like
+			<if test="dbName == 'oracle'">'%'||#{loginName}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{loginName}, '%')</if>
+		</if>
+		<if test="name != null and name != ''">
+			AND a.name like
+			<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{name}, '%')</if>
+		</if>
+		<!-- 数据范围过滤 -->
+		${sqlMap.dsf}
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY  a.name
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="count" resultType="java.lang.Integer">
+		SELECT count(a.id) FROM sys_user a  WHERE a.del_flag = 0
+		<!-- 如果不是超级管理员，则不显示超级管理员用户 -->
+		<if test="!currentUser.admin">
+			AND a.id != '1'
+		</if>
+		<if test="loginName != null and loginName != ''">
+			AND a.login_name like
+			<if test="dbName == 'oracle'">'%'||#{loginName}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{loginName}, '%')</if>
+		</if>
+		<if test="name != null and name != ''">
+			AND a.name like
+			<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+			<if test="dbName == 'mysql'">CONCAT('%', #{name}, '%')</if>
+		</if>
+	</select>
+
+	<!-- 查询全部用户 -->
+	<select id="findAllList" resultType="User">
+		SELECT
+		<include refid="userColumns" />
+		FROM sys_user a
+		<include refid="userJoins" />
+		WHERE a.del_flag = 0
+		ORDER BY a.name
+	</select>
+
+	<!-- 查询除了系统管理员的全部用户 -->
+	<select id="findAllListExceptAdmin" resultType="User">
+		SELECT
+		<include refid="userColumns" />
+		FROM sys_user a
+		<include refid="userJoins" />
+		WHERE a.del_flag = 0 and a.id <![CDATA[!=]]> 1 
+		ORDER BY  a.name
+	</select>
+	
+	<!-- 查询全部用户数目 -->
+	<select id="findAllCount" resultType="long">
+		SELECT
+		COUNT(1)
+		FROM sys_user a
+		WHERE a.del_flag = 0
+	</select>
+
+	<!-- 插入用户 -->
+	<insert id="insert">
+		INSERT INTO sys_user(
+		id,
+		login_name,
+		password,
+		name,
+		email,
+		user_type,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		login_flag,
+		del_flag,
+		teacher_id
+		) VALUES (
+		#{id},
+		#{loginName},
+		#{password},
+		#{name},
+		#{email},
+		#{userType},
+		#{createBy.id},
+		#{createDate},
+		#{updateBy.id},
+		#{updateDate},
+		#{remarks},
+		#{loginFlag},
+		#{delFlag},
+		#{teacherId}
+		)
+	</insert>
+
+	<!-- 更新用户 -->
+	<update id="update">
+		UPDATE sys_user SET
+		login_name = #{loginName},
+		password = #{password},
+		name = #{name},
+		email = #{email},
+		user_type = #{userType},
+		update_by = #{updateBy.id},
+		update_date = #{updateDate},
+		remarks = #{remarks},
+		login_flag = #{loginFlag},
+		teacher_id = #{teacherId}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 删除用户和角色关联表数据 -->
+	<delete id="deleteUserRole">
+		DELETE FROM sys_user_role WHERE user_id = #{id}
+	</delete>
+
+	<!-- 插入用户和角色关联表数据 -->
+	<insert id="insertUserRole">
+		INSERT INTO sys_user_role(user_id, role_id)
+		<foreach collection="roleList" item="role" separator=" union all ">
+			SELECT
+			#{id}, #{role.id} FROM dual
+		</foreach>
+	</insert>
+
+
+	<!-- 更新用户信息 -->
+	<update id="updateUserInfo">
+		UPDATE sys_user SET
+		update_by = #{updateBy.id},
+		update_date = #{updateDate},
+		remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 更新用户密码 -->
+	<update id="updatePasswordById">
+		UPDATE sys_user SET
+		password = #{password}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 更新登录信息，如登录IP、登录时间 -->
+	<update id="updateLoginInfo">
+		UPDATE sys_user SET
+		login_ip = #{loginIp},
+		login_Date = #{loginDate}
+		WHERE id = #{id}
+	</update>
+
+	<!-- 逻辑删除用户 -->
+	<update id="delete">
+		UPDATE sys_user SET
+		del_flag = 1
+		WHERE id = #{id}
+	</update>
+
+</mapper>

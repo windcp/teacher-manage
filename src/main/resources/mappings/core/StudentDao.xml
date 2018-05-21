@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cyl.manage.core.dao.StudentDao">
+
+    <sql id="colums">
+        s.id,
+        s.name AS name,
+        s.student_no as studentNo,
+        s.age as age,
+        s.sex as sex,
+        s.point as point,
+        s.grades as grades,
+        s.remarks,
+        s.create_by AS "createBy.id",
+        s.create_date,
+        s.update_by AS "updateBy.id",
+        s.update_date,
+        s.del_flag
+    </sql>
+
+    <sql id="joinColums">
+        s.id,
+        s.name AS name,
+        s.student_no as studentNo,
+        s.age as age,
+        s.sex as sex,
+        s.remarks,
+        s.create_by AS "createBy.id",
+        s.create_date,
+        s.update_by AS "updateBy.id",
+        s.update_date,
+        s.del_flag,
+        c.id as "classes.id",
+        c.name as "classes.name"
+    </sql>
+
+    <sql id="classesJoinColums">
+        s.id,
+        s.name AS name,
+        s.student_no as studentNo,
+        s.age as age,
+        s.sex as sex,
+        sum(g.point) as point,
+        sum(g.credit) as grades,
+        s.remarks,
+        s.create_by AS "createBy.id",
+        s.create_date,
+        s.update_by AS "updateBy.id",
+        s.update_date,
+        s.del_flag,
+        c.id as "classes.id",
+        c.name as "classes.name"
+    </sql>
+
+<!--    <resultMap id="studentResult" type="Student">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="age" column="age" />
+        <result property="sex" column="sex" />
+        <result property="point" column="point" />
+        <result property="grades" column="grades" />
+        <result property="age" column="age" />
+        <result property="createBy.id" column="create_by" />
+        <result property="updateBy.id" column="update_by" />
+        <result property="createDate" column="create_date" />
+        <result property="updateDate" column="update_date" />
+        <result property="remarks" column="remarks" />
+        <association property="classes" javaType="Classes" >
+            <id property="id" column="id" />
+            <result property="name" column="name" />
+        </association>
+    </resultMap>-->
+
+    <sql id="joins">
+       left join student_classes sc on sc.student_id = s.id
+       left join classes c on c.id = sc.classes_id
+       LEFT JOIN student_grade sg on sg.student_id = s.id
+       LEFT JOIN grade g on g.id = sg.grade_id
+    </sql>
+
+    <sql id="where">
+        1 = 1 and s.del_flag = 0
+        <!--   <if test="name != null and name != ''">
+               and s.name like CONCAT('%', #{name}, '%')
+           </if>-->
+     <!--   <if test="classesIds != null and classesIds !=''">
+            and c.id in
+            <foreach collection="classesIds" item="classesId" open="(" separator="," close=")">
+                #{classesId}
+            </foreach>-->
+        <!--</if>-->
+        <if test="classesId != null and classesId !=''">
+            and c.id = #{classesId}
+        </if>
+        <if test="studentNo != null and studentNo !=''">
+            and s.student_no like CONCAT('%', #{studentNo}, '%')
+        </if>
+    </sql>
+
+    <select id="get" resultType="Student">
+        select
+        <include refid="classesJoinColums"/>
+        from student s <include refid="joins" />
+        where s.id = #{id} and s.del_flag = 0
+    </select>
+
+    <select id="getByStudentNo" resultType="Student">
+        select
+        <include refid="colums"/>
+        from student s where s.student_no = #{studentNO} and s.del_flag = 0
+    </select>
+
+    <select id="findList" resultType="Student">
+        select
+        <include refid="classesJoinColums"/>
+        from student s  <include refid="joins" />
+        <where>
+            <include refid="where"/>
+        </where>
+            group by s.id
+            order by s.update_date desc
+    </select>
+
+    <select id="findAllList" resultType="Student">
+        select <include refid="colums"/> from student s where s.del_flag = 0
+    </select>
+
+    <select id="findListExceptId" resultType="Student">
+        select <include refid="colums"/> from student s where s.id != #{id} and s.del_flag = 0
+    </select>
+
+    <select id="findListByClassesIds" resultType="Student">
+        select
+        <include refid="joinColums"/>
+        from student s  <include refid="joins" />
+        where s.del_flag = 0
+        and c.id in
+        <foreach collection="classesIds" item="id" open="(" close=")"
+                 separator=",">
+            #{id}
+        </foreach>
+        order by s.update_date desc
+    </select>
+
+    <update id="update">
+        update student set
+        name = #{name},
+        student_no = #{studentNo},
+        age = #{age},
+        sex = #{sex},
+        point = #{point},
+        grades = #{grades},
+        update_by = #{updateBy.id},
+        update_date = #{updateDate},
+        remarks = #{remarks}
+        where id = #{id}
+    </update>
+
+    <update id="delete">
+        update student set del_flag = 1
+        where id = #{id}
+    </update>
+
+    <insert id="insert">
+        insert into student(
+        id,
+        name,
+        student_no,
+        age,
+        sex,
+        point,
+        grades,
+        update_by ,
+        update_date ,
+        remarks ,
+        create_by,
+        create_date,
+        del_flag
+        )values(
+        #{id},
+        #{name},
+        #{studentNo},
+        #{age},
+        #{sex},
+        #{point},
+        #{grades},
+        #{updateBy.id},
+        #{updateDate},
+        #{remarks},
+        #{createBy.id},
+        #{createDate},
+        #{delFlag}
+        )
+    </insert>
+
+
+    <!--删除学生和班级关联表数据-->
+    <delete id="deleteStudentClasses">
+        delete from student_classes where student_id = #{studentId}
+    </delete>
+
+    <insert id="insertStudentClasses">
+        insert into student_classes (
+        student_id ,
+        classes_id
+        )values(
+        #{studentId},
+        #{classesId})
+    </insert>
+</mapper>

@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" build-on-make="true" name="teacher-manage-new">
+    <output-path>$PROJECT_DIR$/out/artifacts/teacher_manage_new</output-path>
+    <root id="archive" name="teacher-manage-new.war">
+      <element id="dir-copy" path="$PROJECT_DIR$/target" />
+    </root>
+  </artifact>
+</component>
